@@ -1,0 +1,41 @@
+/gerador_de_cruds/
+│
+├── bancos_teste/                     <-- LUGAR 1: O BANCO COMO ENTRADA
+│   └── meu_banco_empresa.db          # Arquivo que o Gerador vai "ler" para extrair os metadados.
+│
+├── gerador/                          # 1. LÓGICA DO GERADOR (A Ferramenta)
+│   ├── __init__.py
+│   ├── extrator_metadados.py         # Conecta no banco informado e lê as tabelas e colunas
+│   ├── gerador_arquivos.py           # Orquestra a criação dos diretórios e arquivos .py
+│   └── templates/                    # 2. MOLDES PARA GERAÇÃO (Textos/Jinja2)
+│       ├── template_entidade.txt     # Molde base para gerar classes como Cliente
+│       ├── template_dao.txt          # Molde base para gerar DAOs herdando de dao_base.py
+│       └── template_exemplo.txt      # Molde base para gerar os scripts de teste
+│
+├── main_gerador.py                   # 3. PONTO DE ENTRADA DO PROGRAMA
+│                                     # Ex: python main_gerador.py caminho/para/banco.db
+│
+└── /saida_gerada/                    # 4. RESULTADO DA EXECUÇÃO (Onde o código gerado vai parar)
+    │
+    ├── meu_banco_empresa.db          <-- LUGAR 2: O BANCO EM USO
+    │                                 # Cópia (ou atalho) do banco para ser acessado pelos códigos gerados
+    │
+    ├── infra/                        # A base do Trabalho 1 (Copiada ou referenciada)
+    │   ├── dados/dao/dao_base.py     # Base que os DAOs gerados vão herdar
+    │   └── entidades/registro.py     # Base que as Entidades geradas podem usar
+    │
+    └── dominio_banco/                # Pasta criada pelo gerador com base no BD lido
+        ├── entidades/
+        │   ├── cliente.py            # [GERADO] Classe Cliente (Entidade)
+        │   ├── funcionario.py        # [GERADO] Classe Funcionario (Entidade)
+        │   └── venda.py              # [GERADO] Classe Venda (Entidade)
+        │
+        ├── dados/
+        │   ├── cliente_dao.py        # [GERADO] ClienteDao (Acesso a dados)
+        │   ├── funcionario_dao.py    # [GERADO] FuncionarioDao (Acesso a dados)
+        │   └── venda_dao.py          # [GERADO] VendaDao (Acesso a dados)
+        │
+        └── exemplos/
+            ├── cliente_exemplo.py    # [GERADO] Script com dados aleatórios testando o ClienteDao
+            ├── funcionario_exemplo.py# [GERADO] Script com dados aleatórios testando FuncionarioDao
+            └── venda_exemplo.py      # [GERADO] Script com dados aleatórios testando VendaDao

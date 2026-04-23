@@ -1,0 +1,77 @@
+import random
+import string
+import sqlite3
+
+# Importa a estrutura do Framework do Trabalho 1
+from dominio_banco.entidades.{{ nome_tabela | lower }} import {{ nome_classe }}
+from dominio_banco.dados.{{ nome_tabela | lower }}_dao import {{ nome_classe }}Dao
+
+def gerar_string_aleatoria(tamanho=10):
+    return ''.join(random.choices(string.ascii_letters, k=tamanho))
+
+def executar_exemplo():
+    print("="*50)
+    print("EXEMPLO DE UTILIZAÇÃO GERADO AUTOMATICAMENTE - {{ nome_classe | upper }}")
+    print("="*50)
+
+    # Conexão de teste apontando para o banco em uso
+    conexao = sqlite3.connect("meu_banco.db")
+    dao = {{ nome_classe }}Dao(conexao)
+
+    print("\n1. GERANDO DADOS ALEATÓRIOS (Conforme exigência do Trabalho 2)...")
+    novo_obj = {{ nome_classe }}(
+        {%- for col in colunas %}
+            {%- if col.is_pk %}
+        {{ col.nome }}=None{% if not loop.last %},{% endif %}
+            {%- elif col.tipo_python == 'int' %}
+        {{ col.nome }}=random.randint(1, 1000){% if not loop.last %},{% endif %}
+            {%- elif col.tipo_python == 'float' %}
+        {{ col.nome }}=round(random.uniform(10.0, 5000.0), 2){% if not loop.last %},{% endif %}
+            {%- elif col.tipo_python == 'str' %}
+        {{ col.nome }}=gerar_string_aleatoria(15){% if not loop.last %},{% endif %}
+            {%- else %}
+        {{ col.nome }}=None{% if not loop.last %},{% endif %}
+            {%- endif %}
+        {%- endfor %}
+    )
+    
+    print(f"Objeto gerado na memória: {novo_obj}")
+
+    print("\n2. TESTANDO INSERÇÃO (CREATE)...")
+    dao.inserir(novo_obj)
+    {%- for col in colunas if col.is_pk %}
+    id_gerado = novo_obj.{{ col.nome }}
+    print(f"Objeto inserido com sucesso! ID gerado no banco: {id_gerado}")
+    {%- endfor %}
+
+    print("\n3. TESTANDO LEITURA (READ)...")
+    lista = dao.listar_todos()
+    print(f"Total de registros na tabela '{{ nome_tabela }}': {len(lista)}")
+    for item in lista[-3:]: # Mostra os últimos 3 para não poluir o terminal
+        print(f" - {item}")
+
+    print("\n4. TESTANDO ALTERAÇÃO (UPDATE)...")
+    {%- for col in colunas if not col.is_pk %}
+        {%- if loop.first %}
+            {%- if col.tipo_python == 'str' %}
+    novo_obj.{{ col.nome }} = "VALOR_ATUALIZADO_TESTE"
+            {%- elif col.tipo_python == 'int' %}
+    novo_obj.{{ col.nome }} = 9999
+            {%- elif col.tipo_python == 'float' %}
+    novo_obj.{{ col.nome }} = 9999.99
+            {%- endif %}
+    print(f"Alterando a propriedade '{{ col.nome }}' do objeto...")
+        {%- endif %}
+    {%- endfor %}
+    dao.alterar(novo_obj)
+    print("Objeto alterado no banco de dados com sucesso.")
+
+    print("\n5. TESTANDO EXCLUSÃO (DELETE)...")
+    dao.excluir(id_gerado)
+    print(f"Objeto com ID {id_gerado} foi excluído do banco.")
+    
+    conexao.close()
+    print("\nTeste finalizado com sucesso!")
+
+if __name__ == "__main__":
+    executar_exemplo()

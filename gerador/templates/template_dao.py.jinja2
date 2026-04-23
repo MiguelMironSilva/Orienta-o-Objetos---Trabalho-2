@@ -1,0 +1,73 @@
+from saida_gerada.infra.dados.dao.dao_base import DaoBase
+from saida_gerada.dominio_banco.entidades.{{ nome_tabela | lower }} import {{ nome_classe }}
+from typing import List, Optional
+
+class {{ nome_classe }}Dao(DaoBase):
+    """
+    DAO gerado automaticamente para a tabela '{{ nome_tabela }}'.
+    Herda as capacidades de conexão de infra.dados.dao.dao_base.DaoBase.
+    """
+
+    def inserir(self, obj: {{ nome_classe }}) -> None:
+        sql = """
+            INSERT INTO {{ nome_tabela }} (
+                {%- for col in colunas if not col.is_pk %}
+                {{ col.nome }}{% if not loop.last %},{% endif %}
+                {%- endfor %}
+            ) VALUES (
+                {%- for col in colunas if not col.is_pk %}
+                ?{% if not loop.last %},{% endif %}
+                {%- endfor %}
+            )
+        """
+        valores = (
+            {%- for col in colunas if not col.is_pk %}
+            obj.{{ col.nome }},
+            {%- endfor %}
+        )
+        # Assumindo que DaoBase possui self.conexao ou um método executar()
+        cursor = self.conexao.cursor()
+        cursor.execute(sql, valores)
+        self.conexao.commit()
+        {%- for col in colunas if col.is_pk %}
+        obj.{{ col.nome }} = cursor.lastrowid  # Atualiza o ID do objeto após o insert
+        {%- endfor %}
+
+    def alterar(self, obj: {{ nome_classe }}) -> None:
+        sql = """
+            UPDATE {{ nome_tabela }} SET
+                {%- for col in colunas if not col.is_pk %}
+                {{ col.nome }} = ?{% if not loop.last %},{% endif %}
+                {%- endfor %}
+            WHERE {%- for col in colunas if col.is_pk %} {{ col.nome }} = ?{% endfor %}
+        """
+        valores = (
+            {%- for col in colunas if not col.is_pk %}
+            obj.{{ col.nome }},
+            {%- endfor %}
+            {%- for col in colunas if col.is_pk %}
+            obj.{{ col.nome }},
+            {%- endfor %}
+        )
+        self.conexao.cursor().execute(sql, valores)
+        self.conexao.commit()
+
+    def excluir(self, id_obj: int) -> None:
+        {%- for col in colunas if col.is_pk %}
+        sql = "DELETE FROM {{ nome_tabela }} WHERE {{ col.nome }} = ?"
+        {%- endfor %}
+        self.conexao.cursor().execute(sql, (id_obj,))
+        self.conexao.commit()
+
+    def listar_todos(self) -> List[{{ nome_classe }}]:
+        sql = "SELECT * FROM {{ nome_tabela }}"
+        cursor = self.conexao.cursor()
+        cursor.execute(sql)
+        linhas = cursor.fetchall()
+        
+        resultados = []
+        for linha in linhas:
+            # Desempacota a linha do banco na entidade
+            obj = {{ nome_classe }}(*linha)
+            resultados.append(obj)
+        return resultados
