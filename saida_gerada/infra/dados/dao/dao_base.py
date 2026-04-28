@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List, Any, Dict
-from infra.dados.armazenamento.gerenciador_db import GerenciadorDB
-from infra.excecoes.base_errors import RegistroNaoEncontradoError
+from saida_gerada.infra.dados.armazenamento.gerenciador_db import GerenciadorDB
+from saida_gerada.infra.excecoes.base_errors import RegistroNaoEncontradoError
 
 # Define um tipo genérico 'T' que representará as Entidades (Aluno, Curso, etc.)
 T = TypeVar('T')

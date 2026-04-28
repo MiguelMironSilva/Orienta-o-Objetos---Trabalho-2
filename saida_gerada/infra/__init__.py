@@ -12,10 +12,14 @@ from .entidades import Registro
 # 2. Importações da Camada de Dados
 from .dados import DAOBase, GerenciadorDB
 
+# 3. Importações de Exceções Comuns
+from .excecoes import RegistroNaoEncontradoError, ErroDeValidacao
 
 # Define explicitamente o que é exportado quando alguém usa `from infra import *`
 __all__ = [
     "Registro",
     "DAOBase",
-    "GerenciadorDB"
+    "GerenciadorDB",
+    "RegistroNaoEncontradoError",
+    "ErroDeValidacao"
 ]
