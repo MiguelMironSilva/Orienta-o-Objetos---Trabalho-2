@@ -1,73 +1,35 @@
-from saida_gerada.infra.dados.dao.dao_base import DaoBase
+from typing import Any, Dict
+from saida_gerada.infra.dados.dao.dao_base import DAOBase
 from saida_gerada.dominio_banco.entidades.{{ nome_tabela | lower }} import {{ nome_classe }}
-from typing import List, Optional
 
-class {{ nome_classe }}Dao(DaoBase):
+class {{ nome_classe }}Dao(DAOBase[{{ nome_classe }}]):
     """
     DAO gerado automaticamente para a tabela '{{ nome_tabela }}'.
-    Herda as capacidades de conexão de infra.dados.dao.dao_base.DaoBase.
+    Implementa os métodos abstratos exigidos pelo DAOBase do Trabalho 1.
     """
 
-    def inserir(self, obj: {{ nome_classe }}) -> None:
-        sql = """
-            INSERT INTO {{ nome_tabela }} (
-                {%- for col in colunas if not col.is_pk %}
-                {{ col.nome }}{% if not loop.last %},{% endif %}
-                {%- endfor %}
-            ) VALUES (
-                {%- for col in colunas if not col.is_pk %}
-                ?{% if not loop.last %},{% endif %}
-                {%- endfor %}
-            )
-        """
-        valores = (
-            {%- for col in colunas if not col.is_pk %}
-            obj.{{ col.nome }},
-            {%- endfor %}
-        )
-        # Assumindo que DaoBase possui self.conexao ou um método executar()
-        cursor = self.conexao.cursor()
-        cursor.execute(sql, valores)
-        self.conexao.commit()
+    @property
+    def _nome_tabela(self) -> str:
+        """Retorna o nome da tabela no banco de dados."""
+        return "{{ nome_tabela }}"
+
+    @property
+    def _chave_primaria(self) -> str:
+        """Retorna o nome da coluna de chave primária."""
         {%- for col in colunas if col.is_pk %}
-        obj.{{ col.nome }} = cursor.lastrowid  # Atualiza o ID do objeto após o insert
+        return "{{ col.nome }}"
+        {%- else %}
+        return "id"  # Fallback
         {%- endfor %}
 
-    def alterar(self, obj: {{ nome_classe }}) -> None:
-        sql = """
-            UPDATE {{ nome_tabela }} SET
-                {%- for col in colunas if not col.is_pk %}
-                {{ col.nome }} = ?{% if not loop.last %},{% endif %}
-                {%- endfor %}
-            WHERE {%- for col in colunas if col.is_pk %} {{ col.nome }} = ?{% endfor %}
-        """
-        valores = (
-            {%- for col in colunas if not col.is_pk %}
-            obj.{{ col.nome }},
-            {%- endfor %}
-            {%- for col in colunas if col.is_pk %}
-            obj.{{ col.nome }},
-            {%- endfor %}
-        )
-        self.conexao.cursor().execute(sql, valores)
-        self.conexao.commit()
+    def _mapear_linha_para_objeto(self, linha: Any) -> {{ nome_classe }}:
+        """Converte uma tupla (linha do banco) em uma instância da entidade."""
+        return {{ nome_classe }}(*linha)
 
-    def excluir(self, id_obj: int) -> None:
-        {%- for col in colunas if col.is_pk %}
-        sql = "DELETE FROM {{ nome_tabela }} WHERE {{ col.nome }} = ?"
-        {%- endfor %}
-        self.conexao.cursor().execute(sql, (id_obj,))
-        self.conexao.commit()
-
-    def listar_todos(self) -> List[{{ nome_classe }}]:
-        sql = "SELECT * FROM {{ nome_tabela }}"
-        cursor = self.conexao.cursor()
-        cursor.execute(sql)
-        linhas = cursor.fetchall()
-        
-        resultados = []
-        for linha in linhas:
-            # Desempacota a linha do banco na entidade
-            obj = {{ nome_classe }}(*linha)
-            resultados.append(obj)
-        return resultados
+    def _extrair_dicionario(self, objeto: {{ nome_classe }}) -> Dict[str, Any]:
+        """Converte a entidade em um dicionário para o DAOBase montar o SQL."""
+        return {
+            {%- for col in colunas %}
+            "{{ col.nome }}": getattr(objeto, "{{ col.nome }}"){% if not loop.last %},{% endif %}
+            {%- endfor %}
+        }

@@ -1,10 +1,18 @@
+import sys
+import os
+
+# Garante que o Python encontre a pasta raiz do projeto (3 níveis acima do exemplo)
+diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+raiz_projeto = os.path.abspath(os.path.join(diretorio_atual, "..", "..", ".."))
+sys.path.append(raiz_projeto)
+
 import random
 import string
 import sqlite3
 
 # Importa a estrutura do Framework do Trabalho 1
-from dominio_banco.entidades.{{ nome_tabela | lower }} import {{ nome_classe }}
-from dominio_banco.dados.{{ nome_tabela | lower }}_dao import {{ nome_classe }}Dao
+from saida_gerada.dominio_banco.entidades.{{ nome_tabela | lower }} import {{ nome_classe }}
+from saida_gerada.dominio_banco.dados.{{ nome_tabela | lower }}_dao import {{ nome_classe }}Dao
 
 def gerar_string_aleatoria(tamanho=10):
     return ''.join(random.choices(string.ascii_letters, k=tamanho))
@@ -14,9 +22,13 @@ def executar_exemplo():
     print("EXEMPLO DE UTILIZAÇÃO GERADO AUTOMATICAMENTE - {{ nome_classe | upper }}")
     print("="*50)
 
-    # Conexão de teste apontando para o banco em uso
-    conexao = sqlite3.connect("meu_banco.db")
-    dao = {{ nome_classe }}Dao(conexao)
+    #Inicializa a conexão do Singleton antes de usar o DAO
+    from saida_gerada.infra.dados.armazenamento.gerenciador_db import GerenciadorDB
+    db = GerenciadorDB()
+    db.conectar("meu_banco.db") # O nome do banco que você quer usar para os testes
+
+    # Instancia o DAO (o GerenciadorDB interno do framework assume a conexão)
+    dao = {{ nome_classe }}Dao()
 
     print("\n1. GERANDO DADOS ALEATÓRIOS (Conforme exigência do Trabalho 2)...")
     novo_obj = {{ nome_classe }}(
@@ -38,11 +50,30 @@ def executar_exemplo():
     print(f"Objeto gerado na memória: {novo_obj}")
 
     print("\n2. TESTANDO INSERÇÃO (CREATE)...")
-    dao.inserir(novo_obj)
-    {%- for col in colunas if col.is_pk %}
-    id_gerado = novo_obj.{{ col.nome }}
-    print(f"Objeto inserido com sucesso! ID gerado no banco: {id_gerado}")
-    {%- endfor %}
+    try:
+        dao.incluir(novo_obj)
+        {%- for col in colunas if col.is_pk %}
+        id_gerado = novo_obj.{{ col.nome }}
+        print(f"Objeto inserido com sucesso! ID gerado no banco: {id_gerado}")
+        {%- endfor %}
+    except sqlite3.IntegrityError as e:
+        print(f"[AVISO DE CHAVE ESTRANGEIRA] Não foi possível inserir o registro gerado aleatoriamente.")
+        print(f"Detalhe do erro do banco: {e}")
+        print("Causa provável: O gerador criou um ID aleatório para uma Foreign Key que não existe na tabela pai.")
+        print("Para testar o CREATE desta tabela, edite este arquivo de exemplo e insira um ID válido para as chaves estrangeiras.")
+        
+        # Como a inserção falhou, pegamos o ID do último registro válido no banco 
+        # para que os testes de UPDATE e DELETE não quebrem a seguir.
+        lista = dao.listar_todos()
+        if lista:
+            {%- for col in colunas if col.is_pk %}
+            id_gerado = getattr(lista[-1], '{{ col.nome }}')
+            novo_obj = lista[-1]
+            print(f"\n=> Utilizando o registro existente (ID: {id_gerado}) para continuar os testes de UPDATE/DELETE...")
+            {%- endfor %}
+        else:
+            print("\n=> A tabela está vazia. Abortando o resto do teste.")
+            return
 
     print("\n3. TESTANDO LEITURA (READ)...")
     lista = dao.listar_todos()
@@ -70,7 +101,6 @@ def executar_exemplo():
     dao.excluir(id_gerado)
     print(f"Objeto com ID {id_gerado} foi excluído do banco.")
     
-    conexao.close()
     print("\nTeste finalizado com sucesso!")
 
 if __name__ == "__main__":

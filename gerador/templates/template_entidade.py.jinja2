@@ -6,10 +6,9 @@ class {{ nome_classe }}:
     """
     Classe gerada automaticamente representando a tabela '{{ nome_tabela }}'.
     """
-{%- for coluna in colunas %}
-    {%- if coluna.is_pk %}
-    {{ coluna.nome }}: Optional[{{ coluna.tipo_python }}] = None  # Chave Primária (Auto-incremento)
-    {%- else %}
+{%- for coluna in colunas if not coluna.is_pk %}
     {{ coluna.nome }}: {{ coluna.tipo_python }}
-    {%- endif %}
+{%- endfor %}
+{%- for coluna in colunas if coluna.is_pk %}
+    {{ coluna.nome }}: Optional[{{ coluna.tipo_python }}] = None  # Chave Primária (Auto-incremento)
 {%- endfor %}
