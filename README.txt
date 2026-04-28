@@ -46,8 +46,8 @@ O sistema criará automaticamente scripts de teste na pasta
 saida_gerada/dominio_banco/exemplos/. Estes arquivos utilizam dados 
 aleatórios para validar o funcionamento do CRUD gerado.
 Bash
-python saida_gerada/dominio_banco/exemplos/clientes_exemplo.py
-Esse comando testa a persistência da tabela Clientes
+python saida_gerada/dominio_banco/exemplos/curso_exemplo.py
+Esse comando testa a persistência da tabela Curso
 
 Funcionamento das Camadas
 
