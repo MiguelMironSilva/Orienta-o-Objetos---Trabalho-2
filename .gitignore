@@ -1,0 +1,37 @@
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py~
+*.py.class
+*.py.backup
+*.swp
+*.swo
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.ENV/
+
+# Dependencies
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Generated files
+saida_gerada/
+```

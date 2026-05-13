@@ -17,6 +17,22 @@ from saida_gerada.dominio_banco.dados.{{ nome_tabela | lower }}_dao import {{ no
 def gerar_string_aleatoria(tamanho=10):
     return ''.join(random.choices(string.ascii_letters, k=tamanho))
 
+def buscar_id_valido(nome_tabela_fk, coluna_pk_fk):
+    """
+    Busca um ID válido na tabela pai para usar como chave estrangeira.
+    Retorna None se a tabela estiver vazia.
+    """
+    from saida_gerada.infra.dados.armazenamento.gerenciador_db import GerenciadorDB
+    db = GerenciadorDB()
+    try:
+        conn = db._conexao  # Acessa a conexão já estabelecida
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT {coluna_pk_fk} FROM {nome_tabela_fk} ORDER BY {coluna_pk_fk} LIMIT 1")
+        resultado = cursor.fetchone()
+        return resultado[0] if resultado else None
+    except Exception:
+        return None
+
 def executar_exemplo():
     print("="*50)
     print("EXEMPLO DE UTILIZAÇÃO GERADO AUTOMATICAMENTE - {{ nome_classe | upper }}")
@@ -31,10 +47,36 @@ def executar_exemplo():
     dao = {{ nome_classe }}Dao()
 
     print("\n1. GERANDO DADOS ALEATÓRIOS (Conforme exigência do Trabalho 2)...")
+    
+    # Verifica se há chaves estrangeiras e busca IDs válidos nas tabelas pais
+    valores_fk = {}
+    {%- for fk in chaves_estrangeiras %}
+    id_{{ fk.coluna_origem }} = buscar_id_valido("{{ fk.tabela_destino }}", "{{ fk.coluna_destino }}")
+    valores_fk["{{ fk.coluna_origem }}"] = id_{{ fk.coluna_origem }}
+    {%- endfor %}
+    
+    # Verifica se todas as FKs têm IDs válidos
+    fk_invalidas = [k for k, v in valores_fk.items() if v is None]
+    if fk_invalidas:
+        print(f"[AVISO] Não foi possível encontrar IDs válidos para as seguintes chaves estrangeiras: {fk_invalidas}")
+        print("As tabelas de referência podem estar vazias.")
+        print("Para testar o CREATE desta tabela, primeiro insira registros nas tabelas pai.")
+        print("\n=> Abortando o teste devido à falta de dados nas tabelas de referência.")
+        return
+    
+    # Prepara uma lista de nomes de colunas que são chaves estrangeiras para verificação rápida
+    nomes_colunas_fk = [
+        {%- for fk in chaves_estrangeiras %}
+        "{{ fk.coluna_origem }}"{% if not loop.last %},{% endif %}
+        {%- endfor %}
+    ]
+    
     novo_obj = {{ nome_classe }}(
         {%- for col in colunas %}
             {%- if col.is_pk %}
         {{ col.nome }}=None{% if not loop.last %},{% endif %}
+            {%- elif col.nome in nomes_colunas_fk %}
+        {{ col.nome }}=valores_fk["{{ col.nome }}"]{% if not loop.last %},{% endif %}
             {%- elif col.tipo_python == 'int' %}
         {{ col.nome }}=random.randint(1, 1000){% if not loop.last %},{% endif %}
             {%- elif col.tipo_python == 'float' %}

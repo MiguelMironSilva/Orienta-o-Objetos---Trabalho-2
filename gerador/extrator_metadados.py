@@ -73,11 +73,25 @@ class ExtratorMetadadosSQLite:
                         "is_pk": is_pk
                     })
 
-                # 3. Monta o dicionário que o Jinja2 vai receber
+                # 3. Extrai informações sobre chaves estrangeiras
+                # PRAGMA foreign_key_list retorna: (id, seq, table, from, to, on_update, on_delete, match)
+                cursor.execute(f"PRAGMA foreign_key_list({nome_tabela});")
+                info_fk = cursor.fetchall()
+                
+                chaves_estrangeiras = []
+                for fk in info_fk:
+                    chaves_estrangeiras.append({
+                        "coluna_origem": fk[3],  # coluna na tabela atual
+                        "tabela_destino": fk[2],  # tabela pai
+                        "coluna_destino": fk[4]   # coluna na tabela pai
+                    })
+
+                # 4. Monta o dicionário que o Jinja2 vai receber
                 dados_tabela = {
                     "nome_tabela": nome_tabela,
                     "nome_classe": self._formatar_nome_classe(nome_tabela),
-                    "colunas": colunas_formatadas
+                    "colunas": colunas_formatadas,
+                    "chaves_estrangeiras": chaves_estrangeiras
                 }
                 resultado_metadados.append(dados_tabela)
 
